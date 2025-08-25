@@ -1,122 +1,351 @@
-<!DOCTYPE html>
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Poker Strategy Simulator - Reglas Corregidas</title>
+    <script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+    </script>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            min-height: 100vh;
             padding: 20px;
-            background-color: #f4f4f4;
+            color: #333;
         }
-        h1, h2, h3 {
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        header {
             text-align: center;
+            margin-bottom: 30px;
         }
-        #flop, #hand {
+
+        h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        h2 {
+            color: #34495e;
+            text-align: center;
+            margin-bottom: 15px;
+            font-weight: 400;
+            font-size: 1.3em;
+        }
+
+        /* Cartas */
+        .cards-container {
             display: flex;
             justify-content: center;
-            margin: 10px 0;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
         }
+
         .card {
+            width: 80px;
+            height: 120px;
+            border: 3px solid #2c3e50;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             font-size: 24px;
-            margin: 0 10px;
-            padding: 5px 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            background-color: white;
-        }
-        button {
-            margin: 5px;
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        #prompt {
-            text-align: center;
             font-weight: bold;
+            background: white;
+            color: #2c3e50;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
         }
-        #counters {
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        /* Botones de acción */
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .action-btn {
+            padding: 18px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .check { background: linear-gradient(135deg, #3498db, #2980b9); }
+        .bet-26 { background: linear-gradient(135deg, #2ecc71, #27ae60); }
+        .bet-52 { background: linear-gradient(135deg, #f39c12, #e67e22); }
+        .bet-127 { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+
+        /* Resultado */
+        .result-section {
+            margin-bottom: 25px;
+            min-height: 80px;
+        }
+
+        .result-message {
+            padding: 20px;
+            border-radius: 12px;
+            background: #f8f9fa;
+            border-left: 5px solid #3498db;
             text-align: center;
+        }
+
+        .result-message.correct {
+            background: #d4edda;
+            border-left-color: #28a745;
+            color: #155724;
+        }
+
+        .result-message.incorrect {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+            color: #721c24;
+        }
+
+        /* Botón nueva mano */
+        .new-hand-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            color: white;
+            border: none;
+            border-radius: 12px;
             font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            display: none;
         }
+
+        .new-hand-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Estadísticas */
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
         #rules {
-            margin-top: 40px;
-            border-top: 1px solid #ccc;
-            padding-top: 20px;
+            display: none;
         }
-        ul {
-            list-style-type: disc;
-            padding-left: 20px;
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            .card {
+                width: 60px;
+                height: 90px;
+                font-size: 20px;
+            }
+            
+            .action-buttons {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>🎴 Poker Strategy Trainer</h1>
-    <h2>Practica tus decisiones en el flop</h2>
-    <h3>FLOP</h3>
-    <div id="flop">
-        <div class="card">-</div>
-        <div class="card">-</div>
-        <div class="card">-</div>
-    </div>
-    <h3>TU MANO</h3>
-    <div id="hand">
-        <div class="card">-</div>
-        <div class="card">-</div>
-    </div>
-    <p id="prompt">Selecciona la acción correcta para este flop y mano</p>
-    <div style="text-align: center;">
-        <button onclick="selectAction('check')">CHECK</button>
-        <button onclick="selectAction('bet52')">BET 52%</button>
-        <button onclick="selectAction('bet127')">BET 127%</button>
-        <button onclick="selectAction('bet26')">BET 26%</button>
-    </div>
-    <p id="counters">✅ <span id="correct">0</span> ❌ <span id="incorrect">0</span> 🎯 <span id="accuracy">0</span>%</p>
+    <div class="container">
+        <header>
+            <h1>🎴 Poker Strategy Trainer</h1>
+            <h2>Practica tus decisiones en el flop</h2>
+        </header>
+        <h2>FLOP</h2>
+        <div id="flop" class="cards-container">
+            <div class="card">-</div>
+            <div class="card">-</div>
+            <div class="card">-</div>
+        </div>
+        <h2>TU MANO</h2>
+        <div id="hand" class="cards-container">
+            <div class="card">-</div>
+            <div class="card">-</div>
+        </div>
+        <div class="result-section">
+            <p id="result" class="result-message">Selecciona la acción correcta para este flop y mano</p>
+        </div>
+        <div id="action-buttons" class="action-buttons">
+            <button class="action-btn check" onclick="selectAction('check')">CHECK</button>
+            <button class="action-btn bet-52" onclick="selectAction('bet52')">BET 52%</button>
+            <button class="action-btn bet-127" onclick="selectAction('bet127')">BET 127%</button>
+            <button class="action-btn bet-26" onclick="selectAction('bet26')">BET 26%</button>
+        </div>
+        <button id="new-hand" class="new-hand-btn" onclick="newHand()">Nueva Mano</button>
+        <div class="stats" id="counters">
+            <span>✅ <span id="correct">0</span></span>
+            <span>❌ <span id="incorrect">0</span></span>
+            <span>🎯 <span id="accuracy">0</span>%</span>
+        </div>
 
-    <div id="rules">
-        <h2>Reglas de Apuestas en el Flop (Versión Corregida y Clara para Programación)</h2>
-        <p><strong>Definiciones generales:</strong></p>
-        <ul>
-            <li>Ranks de cartas: A=14, K=13, Q=12, J=11, T=10, 9=9, ..., 2=2.</li>
-            <li>Coordinado: Diferencia entre ranks adyacentes (ordenados) ≤2, excluye pairs/trips.</li>
-            <li>Monocolor: Tres cartas mismo palo.</li>
-            <li>Two-tone: Exactamente dos mismo palo.</li>
-            <li>Rainbow: Tres palos distintos.</li>
-            <li>Par: Dos ranks iguales.</li>
-            <li>Trips: Tres ranks iguales.</li>
-            <li>Prioridad: Check 100% > Bet 52% > Bet 127% > Bet 26% > Check por defecto.</li>
-        </ul>
-        <h3>1. Flops de Check 100%</h3>
-        <ul>
-            <li>Coordinados todas ≤10.</li>
-            <li>A + dos ≤5 sin par.</li>
-            <li>Monocolor.</li>
-        </ul>
-        <h3>2. Flops de Bet 52%</h3>
-        <ul>
-            <li>QJT two-tone.</li>
-            <li>AJT two-tone (excluye monocolor).</li>
-            <li>Rainbow no coordinados sin par todas ≤9.</li>
-            <li>Trips.</li>
-        </ul>
-        <h3>3. Bet Polarizado 127%</h3>
-        <p>Condiciones flop: Dos altas (A-T), una <T, two-tone, sin par.</p>
-        <p>Manos para bet:</p>
-        <ul>
-            <li>Top pair kicker A/K/Q.</li>
-            <li>Dobles o mejor.</li>
-            <li>Gutshot + blocker flush draw.</li>
-            <li>OESD + blocker.</li>
-            <li>Bottom pair + blocker.</li>
-            <li>Pocket bajo bottom + blocker.</li>
-        </ul>
-        <h3>4. Bet 26%</h3>
-        <ul>
-            <li>Flops con par no en check/52/127.</li>
-        </ul>
+        <div id="rules">
+            <h2>Reglas de Apuestas en el Flop (Versión Corregida y Clara para Programación)</h2>
+            <p><strong>Definiciones generales:</strong></p>
+            <ul>
+                <li>Ranks de cartas: A=14, K=13, Q=12, J=11, T=10, 9=9, ..., 2=2.</li>
+                <li>Coordinado: Diferencia entre ranks adyacentes (ordenados) ≤2, excluye pairs/trips.</li>
+                <li>Monocolor: Tres cartas mismo palo.</li>
+                <li>Two-tone: Exactamente dos mismo palo.</li>
+                <li>Rainbow: Tres palos distintos.</li>
+                <li>Par: Dos ranks iguales.</li>
+                <li>Trips: Tres ranks iguales.</li>
+                <li>Prioridad: Check 100% > Bet 52% > Bet 127% > Bet 26% por defecto.</li>
+            </ul>
+            <h3>1. Flops de Check 100%</h3>
+            <ul>
+                <li>Coordinados todas ≤10.</li>
+                <li>A + dos ≤5 sin par.</li>
+                <li>Monocolor.</li>
+            </ul>
+            <h3>2. Flops de Bet 52%</h3>
+            <ul>
+                <li>QJT two-tone.</li>
+                <li>AJT two-tone (excluye monocolor).</li>
+                <li>Rainbow no coordinados sin par todas ≤9.</li>
+                <li>Trips.</li>
+            </ul>
+            <h3>3. Bet Polarizado 127%</h3>
+            <p>Condiciones flop: Dos altas (A-T), una <T, two-tone, sin par.</p>
+            <p>Manos para bet:</p>
+            <ul>
+                <li>Top pair kicker A/K/Q.</li>
+                <li>Dobles o mejor.</li>
+                <li>Gutshot + blocker flush draw.</li>
+                <li>OESD + blocker.</li>
+                <li>Bottom pair + blocker.</li>
+                <li>Pocket bajo bottom + blocker.</li>
+            </ul>
+            <h3>4. Bet 26%</h3>
+            <ul>
+                <li>Flops con par no en check/52/127.</li>
+                <li>Flops que no cumplen ninguna otra condición.</li>
+            </ul>
+        </div>
     </div>
 
     <script>
@@ -124,7 +353,7 @@
         const suits = ['♠', '♥', '♦', '♣'];
         const rankToNum = { '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, 'T': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14 };
 
-        let currentCorrect = '';
+        let current = {action: '', reason: ''};
         let correctCount = 0;
         let incorrectCount = 0;
 
@@ -151,7 +380,7 @@
             const playerRanks = hand.map(c => rankToNum[c[0]]);
             const playerSuits = hand.map(c => c[1]);
 
-            currentCorrect = getCorrectAction(boardRanks, boardSuits, playerRanks, playerSuits);
+            current = getCorrectAction(boardRanks, boardSuits, playerRanks, playerSuits);
         }
 
         function displayFlop(flop) {
@@ -183,29 +412,32 @@
             const isTrips = uniqueRanks.size === 1;
 
             // Check 100%
-            if (isMonocolor) return 'check';
-            if (boardRanks.every(r => r <= 10) && isCoordinated) return 'check';
-            if (boardRanks.includes(14) && boardRanks.filter(r => r !== 14).every(r => r <= 5) && uniqueRanks.size === 3) return 'check';
+            if (isMonocolor) return {action: 'check', reason: 'Flop monocolor (tres cartas del mismo palo).'};
+            if (boardRanks.every(r => r <= 10) && isCoordinated) return {action: 'check', reason: 'Flop coordinado con todas las cartas ≤10.'};
+            if (boardRanks.includes(14) && boardRanks.filter(r => r !== 14).every(r => r <= 5) && uniqueRanks.size === 3) return {action: 'check', reason: 'Flop con A y las otras dos cartas ≤5, sin par.'};
 
             // Bet 52%
             const boardRankSet = new Set(sortedBoardRanks);
-            if (boardRankSet.size === 3 && Array.from(boardRankSet).join(',') === '10,11,12' && isTwoTone) return 'bet52';
-            if (boardRankSet.size === 3 && Array.from(boardRankSet).join(',') === '10,11,14' && isTwoTone) return 'bet52';
-            if (isRainbow && !isCoordinated && uniqueRanks.size === 3 && boardRanks.every(r => r <= 9)) return 'bet52';
-            if (isTrips) return 'bet52';
+            if (boardRankSet.size === 3 && Array.from(boardRankSet).join(',') === '10,11,12' && isTwoTone) return {action: 'bet52', reason: 'Flop QJT two-tone.'};
+            if (boardRankSet.size === 3 && Array.from(boardRankSet).join(',') === '10,11,14' && isTwoTone) return {action: 'bet52', reason: 'Flop AJT two-tone.'};
+            if (isRainbow && !isCoordinated && uniqueRanks.size === 3 && boardRanks.every(r => r <= 9)) return {action: 'bet52', reason: 'Flop rainbow, no coordinado, sin par, todas las cartas ≤9.'};
+            if (isTrips) return {action: 'bet52', reason: 'Flop con trips.'};
 
             // Bet 127% flop check
             const highs = boardRanks.filter(r => r >= 10).length;
             const lows = boardRanks.filter(r => r < 10).length;
             if (highs === 2 && lows === 1 && isTwoTone && uniqueRanks.size === 3) {
-                if (doesHandQualifyForBet127(boardRanks, boardSuits, playerRanks, playerSuits)) return 'bet127';
-                return 'check';
+                const qualify = doesHandQualifyForBet127(boardRanks, boardSuits, playerRanks, playerSuits);
+                if (qualify.reason) {
+                    return {action: 'bet127', reason: `Flop: Dos cartas altas (A-T), una <T, two-tone, sin par. Mano: ${qualify.reason}`};
+                }
+                return {action: 'check', reason: 'Flop cumple condiciones para Bet 127% (dos altas, una <T, two-tone, sin par), pero la mano no califica.'};
             }
 
             // Bet 26%
-            if (isPair) return 'bet26';
+            if (isPair) return {action: 'bet26', reason: 'Flop con par, no cumple condiciones para check 100%, bet 52%, ni bet 127%.'};
 
-            return 'check';
+            return {action: 'bet26', reason: 'Bet 26% por defecto: ninguna condición para apuesta cumplida.'};
         }
 
         function doesHandQualifyForBet127(boardRanks, boardSuits, playerRanks, playerSuits) {
@@ -216,18 +448,18 @@
             const hasBlocker = playerSuits.some(s => s === fdSuit);
 
             // Value hands
-            if (isTopPairGoodKicker(boardRanks, playerRanks)) return true;
-            if (isTwoPairOrBetter(counts)) return true;
-            if (isStraight(allRanks)) return true;
-            if (isFlush(allSuits)) return true;
+            if (isTopPairGoodKicker(boardRanks, playerRanks)) return {reason: 'Top pair con kicker A, K o Q.'};
+            if (isTwoPairOrBetter(counts)) return {reason: 'Dobles o mejor.'};
+            if (isStraight(allRanks)) return {reason: 'Escalera.'};
+            if (isFlush(allSuits)) return {reason: 'Color.'};
 
             // Bluffs
-            if (hasGutshot(allRanks) && hasBlocker) return true;
-            if (hasOESD(allRanks) && hasBlocker) return true;
-            if (isBottomPair(boardRanks, playerRanks) && hasBlocker) return true;
-            if (isLowPocket(boardRanks, playerRanks) && hasBlocker) return true;
+            if (hasGutshot(allRanks) && hasBlocker) return {reason: 'Gutshot + blocker del flush draw.'};
+            if (hasOESD(allRanks) && hasBlocker) return {reason: 'OESD + blocker del flush draw.'};
+            if (isBottomPair(boardRanks, playerRanks) && hasBlocker) return {reason: 'Bottom pair + blocker del flush draw.'};
+            if (isLowPocket(boardRanks, playerRanks) && hasBlocker) return {reason: 'Pocket pair por debajo del bottom pair + blocker del flush draw.'};
 
-            return false;
+            return {reason: null};
         }
 
         function getRankCounts(allRanks) {
@@ -297,13 +529,13 @@
         function hasGutshot(allRanks) {
             let ranks = [...new Set(allRanks)].sort((a, b) => a - b);
             for (let i = 0; i <= ranks.length - 4; i++) {
-                if (ranks[i + 3] - ranks[i] === 4) return true;
+                if (ranks[i + 3] - ranks[i] === 4 && ranks.slice(i, i + 4).length === 4) return true;
             }
             // Wheel gutshot
             if (ranks.includes(14)) {
                 let lowRanks = ranks.filter(r => r <= 5).map(r => r === 14 ? 1 : r).sort((a, b) => a - b);
                 for (let i = 0; i <= lowRanks.length - 4; i++) {
-                    if (lowRanks[i + 3] - lowRanks[i] === 4) return true;
+                    if (lowRanks[i + 3] - lowRanks[i] === 4 && lowRanks.slice(i, i + 4).length === 4) return true;
                 }
             }
             return false;
@@ -316,20 +548,46 @@
         }
 
         function isLowPocket(boardRanks, playerRanks) {
-            if (playerRanks[0] === playerRanks[1]) {
-                return playerRanks[0] < Math.min(...boardRanks);
+            if (playerRanks[0] === playerRanks[1] && playerRanks[0] < Math.min(...boardRanks)) {
+                return true;
             }
             return false;
         }
 
-        function selectAction(action) {
-            if (action === currentCorrect) {
+        function selectAction(selected) {
+            const resultElem = document.getElementById('result');
+            resultElem.classList.remove('correct', 'incorrect');
+            let message = '';
+            if (selected === current.action) {
                 correctCount++;
+                resultElem.classList.add('correct');
+                message = `¡Correcto! La acción es ${getActionText(current.action)} porque: ${current.reason}`;
             } else {
                 incorrectCount++;
+                resultElem.classList.add('incorrect');
+                message = `Incorrecto. Elegiste ${getActionText(selected)}, pero la correcta es ${getActionText(current.action)} porque: ${current.reason}`;
             }
+            resultElem.innerText = message;
             updateCounters();
+            document.getElementById('action-buttons').style.display = 'none';
+            document.getElementById('new-hand').style.display = 'block';
+        }
+
+        function newHand() {
+            document.getElementById('result').innerText = 'Selecciona la acción correcta para este flop y mano';
+            document.getElementById('result').classList.remove('correct', 'incorrect');
+            document.getElementById('action-buttons').style.display = 'grid';
+            document.getElementById('new-hand').style.display = 'none';
             generateScenario();
+        }
+
+        function getActionText(action) {
+            switch (action) {
+                case 'check': return 'CHECK';
+                case 'bet52': return 'BET 52%';
+                case 'bet127': return 'BET 127%';
+                case 'bet26': return 'BET 26%';
+            }
         }
 
         function updateCounters() {
