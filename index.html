@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poker Strategy Simulator - Reglas Corregidas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1, h2, h3 {
+            text-align: center;
+        }
+        #flop, #hand {
+            display: flex;
+            justify-content: center;
+            margin: 10px 0;
+        }
+        .card {
+            font-size: 24px;
+            margin: 0 10px;
+            padding: 5px 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: white;
+        }
+        button {
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        #prompt {
+            text-align: center;
+            font-weight: bold;
+        }
+        #counters {
+            text-align: center;
+            font-size: 18px;
+        }
+        #rules {
+            margin-top: 40px;
+            border-top: 1px solid #ccc;
+            padding-top: 20px;
+        }
+        ul {
+            list-style-type: disc;
+            padding-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎴 Poker Strategy Trainer</h1>
+    <h2>Practica tus decisiones en el flop</h2>
+    <h3>FLOP</h3>
+    <div id="flop">
+        <div class="card">-</div>
+        <div class="card">-</div>
+        <div class="card">-</div>
+    </div>
+    <h3>TU MANO</h3>
+    <div id="hand">
+        <div class="card">-</div>
+        <div class="card">-</div>
+    </div>
+    <p id="prompt">Selecciona la acción correcta para este flop y mano</p>
+    <div style="text-align: center;">
+        <button onclick="selectAction('check')">CHECK</button>
+        <button onclick="selectAction('bet52')">BET 52%</button>
+        <button onclick="selectAction('bet127')">BET 127%</button>
+        <button onclick="selectAction('bet26')">BET 26%</button>
+    </div>
+    <p id="counters">✅ <span id="correct">0</span> ❌ <span id="incorrect">0</span> 🎯 <span id="accuracy">0</span>%</p>
+
+    <div id="rules">
+        <h2>Reglas de Apuestas en el Flop (Versión Corregida y Clara para Programación)</h2>
+        <p><strong>Definiciones generales:</strong></p>
+        <ul>
+            <li>Ranks de cartas: A=14, K=13, Q=12, J=11, T=10, 9=9, ..., 2=2.</li>
+            <li>Coordinado: Diferencia entre ranks adyacentes (ordenados) ≤2, excluye pairs/trips.</li>
+            <li>Monocolor: Tres cartas mismo palo.</li>
+            <li>Two-tone: Exactamente dos mismo palo.</li>
+            <li>Rainbow: Tres palos distintos.</li>
+            <li>Par: Dos ranks iguales.</li>
+            <li>Trips: Tres ranks iguales.</li>
+            <li>Prioridad: Check 100% > Bet 52% > Bet 127% > Bet 26% > Check por defecto.</li>
+        </ul>
+        <h3>1. Flops de Check 100%</h3>
+        <ul>
+            <li>Coordinados todas ≤10.</li>
+            <li>A + dos ≤5 sin par.</li>
+            <li>Monocolor.</li>
+        </ul>
+        <h3>2. Flops de Bet 52%</h3>
+        <ul>
+            <li>QJT two-tone.</li>
+            <li>AJT two-tone (excluye monocolor).</li>
+            <li>Rainbow no coordinados sin par todas ≤9.</li>
+            <li>Trips.</li>
+        </ul>
+        <h3>3. Bet Polarizado 127%</h3>
+        <p>Condiciones flop: Dos altas (A-T), una <T, two-tone, sin par.</p>
+        <p>Manos para bet:</p>
+        <ul>
+            <li>Top pair kicker A/K/Q.</li>
+            <li>Dobles o mejor.</li>
+            <li>Gutshot + blocker flush draw.</li>
+            <li>OESD + blocker.</li>
+            <li>Bottom pair + blocker.</li>
+            <li>Pocket bajo bottom + blocker.</li>
+        </ul>
+        <h3>4. Bet 26%</h3>
+        <ul>
+            <li>Flops con par no en check/52/127.</li>
+        </ul>
+    </div>
+
+    <script>
+        const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'];
+        const suits = ['♠', '♥', '♦', '♣'];
+        const rankToNum = { '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, 'T': 10, 'J': 11, 'Q': 12, 'K': 13, 'A': 14 };
+
+        let currentCorrect = '';
+        let correctCount = 0;
+        let incorrectCount = 0;
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function generateScenario() {
+            let deck = [];
+            ranks.forEach(r => suits.forEach(s => deck.push(r + s)));
+            shuffle(deck);
+            const flop = deck.slice(0, 3);
+            const hand = deck.slice(3, 5);
+
+            displayFlop(flop);
+            displayHand(hand);
+
+            const boardRanks = flop.map(c => rankToNum[c[0]]);
+            const boardSuits = flop.map(c => c[1]);
+            const playerRanks = hand.map(c => rankToNum[c[0]]);
+            const playerSuits = hand.map(c => c[1]);
+
+            currentCorrect = getCorrectAction(boardRanks, boardSuits, playerRanks, playerSuits);
+        }
+
+        function displayFlop(flop) {
+            document.getElementById('flop').innerHTML = flop.map(c => {
+                const color = (c[1] === '♥' || c[1] === '♦') ? 'red' : 'black';
+                return `<div class="card" style="color: ${color};">${c}</div>`;
+            }).join('');
+        }
+
+        function displayHand(hand) {
+            document.getElementById('hand').innerHTML = hand.map(c => {
+                const color = (c[1] === '♥' || c[1] === '♦') ? 'red' : 'black';
+                return `<div class="card" style="color: ${color};">${c}</div>`;
+            }).join('');
+        }
+
+        function getCorrectAction(boardRanks, boardSuits, playerRanks, playerSuits) {
+            const sortedBoardRanks = [...boardRanks].sort((a, b) => a - b);
+            const uniqueRanks = new Set(boardRanks);
+            const uniqueSuits = new Set(boardSuits);
+            const suitCounts = suits.map(s => boardSuits.filter(bs => bs === s).length);
+            const maxSuit = Math.max(...suitCounts);
+            const isMonocolor = maxSuit === 3;
+            const isTwoTone = maxSuit === 2;
+            const isRainbow = uniqueSuits.size === 3;
+            const diffs = [sortedBoardRanks[1] - sortedBoardRanks[0], sortedBoardRanks[2] - sortedBoardRanks[1]];
+            const isCoordinated = diffs[0] <= 2 && diffs[1] <= 2 && uniqueRanks.size === 3;
+            const isPair = uniqueRanks.size === 2;
+            const isTrips = uniqueRanks.size === 1;
+
+            // Check 100%
+            if (isMonocolor) return 'check';
+            if (boardRanks.every(r => r <= 10) && isCoordinated) return 'check';
+            if (boardRanks.includes(14) && boardRanks.filter(r => r !== 14).every(r => r <= 5) && uniqueRanks.size === 3) return 'check';
+
+            // Bet 52%
+            const boardRankSet = new Set(sortedBoardRanks);
+            if (boardRankSet.size === 3 && Array.from(boardRankSet).join(',') === '10,11,12' && isTwoTone) return 'bet52';
+            if (boardRankSet.size === 3 && Array.from(boardRankSet).join(',') === '10,11,14' && isTwoTone) return 'bet52';
+            if (isRainbow && !isCoordinated && uniqueRanks.size === 3 && boardRanks.every(r => r <= 9)) return 'bet52';
+            if (isTrips) return 'bet52';
+
+            // Bet 127% flop check
+            const highs = boardRanks.filter(r => r >= 10).length;
+            const lows = boardRanks.filter(r => r < 10).length;
+            if (highs === 2 && lows === 1 && isTwoTone && uniqueRanks.size === 3) {
+                if (doesHandQualifyForBet127(boardRanks, boardSuits, playerRanks, playerSuits)) return 'bet127';
+                return 'check';
+            }
+
+            // Bet 26%
+            if (isPair) return 'bet26';
+
+            return 'check';
+        }
+
+        function doesHandQualifyForBet127(boardRanks, boardSuits, playerRanks, playerSuits) {
+            const allRanks = [...boardRanks, ...playerRanks];
+            const allSuits = [...boardSuits, ...playerSuits];
+            const counts = getRankCounts(allRanks);
+            const fdSuit = suits.find(s => boardSuits.filter(bs => bs === s).length === 2);
+            const hasBlocker = playerSuits.some(s => s === fdSuit);
+
+            // Value hands
+            if (isTopPairGoodKicker(boardRanks, playerRanks)) return true;
+            if (isTwoPairOrBetter(counts)) return true;
+            if (isStraight(allRanks)) return true;
+            if (isFlush(allSuits)) return true;
+
+            // Bluffs
+            if (hasGutshot(allRanks) && hasBlocker) return true;
+            if (hasOESD(allRanks) && hasBlocker) return true;
+            if (isBottomPair(boardRanks, playerRanks) && hasBlocker) return true;
+            if (isLowPocket(boardRanks, playerRanks) && hasBlocker) return true;
+
+            return false;
+        }
+
+        function getRankCounts(allRanks) {
+            const counts = {};
+            allRanks.forEach(r => counts[r] = (counts[r] || 0) + 1);
+            return counts;
+        }
+
+        function isFlush(allSuits) {
+            const counts = {};
+            allSuits.forEach(s => counts[s] = (counts[s] || 0) + 1);
+            return Object.values(counts).some(c => c >= 5);
+        }
+
+        function isStraight(allRanks) {
+            let ranks = [...new Set(allRanks)].sort((a, b) => a - b);
+            if (ranks.length < 5) return false;
+            for (let i = 0; i <= ranks.length - 5; i++) {
+                if (ranks[i + 4] - ranks[i] === 4) return true;
+            }
+            // Wheel straight (A-2-3-4-5)
+            if (ranks.includes(14) && ranks.includes(2) && ranks.includes(3) && ranks.includes(4) && ranks.includes(5)) return true;
+            return false;
+        }
+
+        function isTwoPairOrBetter(counts) {
+            let pairs = 0;
+            let hasTrips = false;
+            let hasQuad = false;
+            Object.values(counts).forEach(c => {
+                if (c >= 4) hasQuad = true;
+                if (c === 3) hasTrips = true;
+                if (c === 2) pairs++;
+            });
+            if (hasQuad) return true;
+            if (hasTrips && pairs >= 1) return true;
+            if (hasTrips) return true;
+            if (pairs >= 2) return true;
+            return false;
+        }
+
+        function isTopPairGoodKicker(boardRanks, playerRanks) {
+            const top = Math.max(...boardRanks);
+            const paired = playerRanks.includes(top);
+            if (paired && playerRanks.filter(r => r === top).length === 1) {
+                const kicker = playerRanks.find(r => r !== top);
+                return kicker >= 12;
+            }
+            return false;
+        }
+
+        function hasOESD(allRanks) {
+            let ranks = [...new Set(allRanks)].sort((a, b) => a - b);
+            for (let i = 0; i <= ranks.length - 4; i++) {
+                if (ranks[i + 3] - ranks[i] === 3) return true;
+            }
+            // Wheel OESD
+            if (ranks.includes(14)) {
+                let lowRanks = ranks.filter(r => r <= 5).map(r => r === 14 ? 1 : r).sort((a, b) => a - b);
+                for (let i = 0; i <= lowRanks.length - 4; i++) {
+                    if (lowRanks[i + 3] - lowRanks[i] === 3) return true;
+                }
+            }
+            return false;
+        }
+
+        function hasGutshot(allRanks) {
+            let ranks = [...new Set(allRanks)].sort((a, b) => a - b);
+            for (let i = 0; i <= ranks.length - 4; i++) {
+                if (ranks[i + 3] - ranks[i] === 4) return true;
+            }
+            // Wheel gutshot
+            if (ranks.includes(14)) {
+                let lowRanks = ranks.filter(r => r <= 5).map(r => r === 14 ? 1 : r).sort((a, b) => a - b);
+                for (let i = 0; i <= lowRanks.length - 4; i++) {
+                    if (lowRanks[i + 3] - lowRanks[i] === 4) return true;
+                }
+            }
+            return false;
+        }
+
+        function isBottomPair(boardRanks, playerRanks) {
+            const bottom = Math.min(...boardRanks);
+            const paired = playerRanks.includes(bottom);
+            return paired && playerRanks.filter(r => r === bottom).length === 1;
+        }
+
+        function isLowPocket(boardRanks, playerRanks) {
+            if (playerRanks[0] === playerRanks[1]) {
+                return playerRanks[0] < Math.min(...boardRanks);
+            }
+            return false;
+        }
+
+        function selectAction(action) {
+            if (action === currentCorrect) {
+                correctCount++;
+            } else {
+                incorrectCount++;
+            }
+            updateCounters();
+            generateScenario();
+        }
+
+        function updateCounters() {
+            const total = correctCount + incorrectCount;
+            const acc = total > 0 ? (correctCount / total * 100).toFixed(0) : 0;
+            document.getElementById('correct').innerText = correctCount;
+            document.getElementById('incorrect').innerText = incorrectCount;
+            document.getElementById('accuracy').innerText = acc;
+        }
+
+        // Iniciar
+        generateScenario();
+    </script>
+</body>
+</html>
